@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+  <!-- INHERIT FORM VIEW -->
+  <record id="crm_lead_form_call_center" model="ir.ui.view">
+    <field name="name">crm.lead.form.call.center</field>
+    <field name="model">crm.lead</field>
+    <field name="inherit_id" ref="crm.crm_lead_view_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='phone']" position="after">
+        <separator string="Suivi des appels"/>
+        <group name="call_center_info" col="4">
+          <field name="statut_appel"/>
+          <field name="nb_tentatives"/>
+          <field name="jour_relance" string="Jour J"/>
+          <field name="heure_relance"/>
+          <field name="date_premier_appel"/>
+          <field name="priorite_appel"/>
+        </group>
+      </xpath>
+    </field>
+  </record>
+
+  <!-- ACTION FILE D'APPEL -->
+  <record id="action_crm_lead_file_appel" model="ir.actions.act_window">
+    <field name="name">File d'appel</field>
+    <field name="res_model">crm.lead</field>
+    <field name="view_mode">list,form</field>
+    <field name="domain">[('statut_appel', 'not in', ['termine']), ('active', '=', True)]</field>
+    <field name="context">{'default_statut_appel': 'nouveau'}</field>
+  </record>
+
+</odoo>

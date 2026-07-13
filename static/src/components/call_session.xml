@@ -1,0 +1,451 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+  <t t-name="crm_call_center.CallSession">
+    <div class="o_cc_root" t-att-data-tick="tick.v">
+
+      <!-- HEADER -->
+      <div class="o_cc_header d-flex align-items-center gap-3 px-4 py-2 border-bottom bg-white">
+        <span class="fw-bold fs-6 text-dark">Session d'appel</span>
+
+        <!-- Sélecteur de mode -->
+        <div t-if="!s.active" class="d-flex gap-2 ms-2">
+          <button class="btn btn-sm"
+                  t-att-class="s.filterMode=='team'?'btn-outline-secondary active':'btn-outline-secondary'"
+                  t-on-click="() => svc.setFilterMode('team')">
+            <i class="fa fa-users me-1"/>
+            Mon équipe
+            <span class="badge bg-secondary ms-1 o_cc_mode_badge">Vue</span>
+          </button>
+          <button class="btn btn-sm"
+                  t-att-class="s.filterMode=='me'?'btn-primary':'btn-outline-primary'"
+                  t-on-click="() => svc.setFilterMode('me')">
+            <i class="fa fa-user me-1"/>
+            Mes leads
+            <span class="badge bg-success ms-1 o_cc_mode_badge">Appels</span>
+          </button>
+        </div>
+
+        <!-- Indicateur mode actif pendant session -->
+        <div t-if="s.active" class="d-flex align-items-center gap-2">
+          <span class="badge bg-primary">
+            <i class="fa fa-user me-1"/>Mes leads
+          </span>
+        </div>
+
+        <div class="flex-grow-1"/>
+
+        <!-- Stats -->
+        <div t-if="s.active" class="d-flex align-items-center gap-3">
+          <span class="badge bg-success fs-6 px-3 py-2">
+            <i class="fa fa-check me-1"/>
+            <t t-esc="s.callsDone"/> traités
+          </span>
+          <div style="width:120px">
+            <div class="progress" style="height:6px">
+              <div class="progress-bar bg-primary"
+                   t-attf-style="width:{{ s.totalLeads?Math.round((s.callsDone/s.totalLeads)*100):0 }}%"/>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bouton Démarrer : seulement en mode "mes leads" -->
+        <div t-if="!s.active">
+          <button t-if="s.filterMode==='me'"
+                  class="btn btn-primary"
+                  t-on-click="() => svc.startSession()">
+            <i class="fa fa-play me-1"/>Démarrer la session
+          </button>
+          <div t-else="" class="o_cc_consult_badge">
+            <i class="fa fa-eye me-1"/>Mode consultation
+          </div>
+        </div>
+        <button t-else="" class="btn o_cc_btn_stop"
+                t-on-click="() => svc.stopSession()">
+          <i class="fa fa-stop me-1"/>Arrêter
+        </button>
+      </div>
+
+      <!-- Bandeau info si mode équipe -->
+      <div t-if="!s.active and s.filterMode==='team'"
+           class="o_cc_team_banner">
+        <i class="fa fa-info-circle me-2"/>
+        Mode <strong>Mon équipe</strong> — consultation uniquement.
+        Passez en <strong>Mes leads</strong> pour démarrer une session d'appel.
+      </div>
+
+      <!-- 3 COLONNES -->
+      <div class="o_cc_columns">
+
+        <!-- QUALIFIÉS -->
+        <div class="o_cc_col o_cc_col_left">
+          <div class="o_cc_col_header">
+            <span class="o_cc_col_title">Qualifiés</span>
+            <span class="badge bg-primary rounded-pill" t-esc="qualifiedLeads.length"/>
+          </div>
+          <div class="px-2 py-1">
+            <input type="date" class="form-control form-control-sm" t-model="local.filterDate"/>
+          </div>
+          <div class="o_cc_col_body">
+            <div t-if="qualifiedLeads.length===0" class="o_cc_empty">
+              <i class="fa fa-inbox fa-2x d-block mb-2"/>Aucun lead qualifié
+            </div>
+            <t t-foreach="qualifiedLeads" t-as="lead" t-key="lead.id">
+              <div class="o_cc_lead_card">
+                <div class="d-flex justify-content-between align-items-start mb-1">
+                  <div class="o_cc_lead_name" t-esc="lead.partner_name or lead.name"/>
+                  <span class="o_cc_timestamp" t-esc="svc.fmtDate(lead)"/>
+                </div>
+                <div class="o_cc_lead_sub" t-esc="lead.contact_name or ''"/>
+                <div class="o_cc_lead_phone">
+                  <i class="fa fa-phone me-1 text-primary"/>
+                  <t t-esc="lead.phone or 'N/A'"/>
+                </div>
+                <div t-if="svc.fmtDuration(lead)" class="o_cc_call_dur">
+                  <i class="fa fa-clock-o me-1"/>
+                  Début <t t-esc="svc.fmtDuration(lead).start"/> —
+                  durée <t t-esc="svc.fmtDuration(lead).duration"/>
+                </div>
+                <span class="badge mt-1"
+                      t-att-class="getStageClass(lead.statut_appel)"
+                      t-esc="getStageLabel(lead)"/>
+              </div>
+            </t>
+          </div>
+        </div>
+
+        <!-- RELANCE -->
+        <div class="o_cc_col o_cc_col_center">
+          <div class="o_cc_col_header">
+            <span class="o_cc_col_title">Relance</span>
+            <span class="badge bg-warning text-dark rounded-pill"
+                  t-esc="s.respondeurLeads.length"/>
+          </div>
+          <div class="o_cc_col_body">
+            <div t-if="s.respondeurLeads.length===0" class="o_cc_empty">
+              <i class="fa fa-phone fa-2x d-block mb-2"/>Aucun répondeur
+            </div>
+            <t t-foreach="s.respondeurLeads" t-as="lead" t-key="lead.id">
+              <div class="o_cc_lead_card o_cc_lead_respondeur">
+                <div class="d-flex justify-content-between align-items-start mb-1">
+                  <div class="o_cc_lead_name" t-esc="lead.partner_name or lead.name"/>
+                  <span class="o_cc_timestamp" t-esc="svc.fmtDate(lead)"/>
+                </div>
+                <div class="o_cc_lead_phone">
+                  <i class="fa fa-phone me-1 text-warning"/>
+                  <t t-esc="lead.phone or 'N/A'"/>
+                </div>
+                <div class="o_cc_lead_sub mt-1">
+                  <i class="fa fa-refresh me-1"/>
+                  Tentative <t t-esc="lead.nb_tentatives or 0"/>/6 —
+                  J<t t-esc="lead.jour_relance"/>
+                </div>
+                <div t-if="svc.fmtDuration(lead)" class="o_cc_call_dur">
+                  <i class="fa fa-clock-o me-1"/>
+                  Début <t t-esc="svc.fmtDuration(lead).start"/> —
+                  durée <t t-esc="svc.fmtDuration(lead).duration"/>
+                </div>
+              </div>
+            </t>
+          </div>
+        </div>
+
+        <!-- NOUVEAUX LEADS -->
+        <div class="o_cc_col o_cc_col_right">
+          <div class="o_cc_col_header">
+            <span class="o_cc_col_title">
+              <t t-if="s.filterMode==='me'">Mes leads à appeler</t>
+              <t t-else="">Nouveaux leads équipe</t>
+            </span>
+            <span class="badge bg-info text-dark rounded-pill" t-esc="callQueue.length"/>
+          </div>
+          <div class="o_cc_col_body">
+            <div t-if="callQueue.length===0" class="o_cc_empty">
+              <i class="fa fa-check-circle fa-2x d-block mb-2"/>
+              <t t-if="s.filterMode==='me'">Aucun lead assigné</t>
+              <t t-else="">File vide</t>
+            </div>
+            <t t-foreach="callQueue" t-as="lead" t-key="lead.id">
+              <div class="o_cc_lead_card d-flex align-items-start gap-2"
+                   t-att-class="lead.id===s.currentLead?.id?'o_cc_lead_current':''">
+                <div class="o_cc_lead_num" t-esc="lead_index+1"/>
+                <div class="flex-grow-1">
+                  <div class="d-flex justify-content-between align-items-start">
+                    <div class="o_cc_lead_name" t-esc="lead.partner_name or lead.name"/>
+                    <span class="o_cc_timestamp" t-esc="svc.fmtDate(lead)"/>
+                  </div>
+                  <div class="o_cc_lead_phone">
+                    <i class="fa fa-phone me-1 text-primary"/>
+                    <t t-esc="lead.phone or 'Aucun numéro'"/>
+                  </div>
+                  <div class="o_cc_lead_sub" t-esc="lead.contact_name or ''"/>
+                  <!-- Vendeur assigné (utile en mode équipe) -->
+                  <div t-if="s.filterMode==='team' and lead.user_id"
+                       class="o_cc_lead_sub">
+                    <i class="fa fa-user me-1"/>
+                    <t t-esc="lead.user_id[1]"/>
+                  </div>
+                </div>
+                <span t-if="lead.id===s.currentLead?.id"
+                      class="badge bg-danger flex-shrink-0">En cours</span>
+              </div>
+            </t>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- POPUP FLOTTANT -->
+      <div t-if="s.active and s.phase!=='idle'" class="o_cc_popup_overlay">
+        <div class="o_cc_popup_card">
+
+          <!-- PAS DE NUMÉRO -->
+          <div t-if="s.phase==='nophone'" class="o_cc_nophone">
+            <div class="o_cc_nophone_icon">
+              <i class="fa fa-phone-slash"/>
+            </div>
+            <h5 class="fw-bold text-dark mb-1">Aucun numéro de téléphone</h5>
+            <p class="text-muted mb-4">
+              <strong t-esc="s.currentLead?.partner_name or s.currentLead?.name"/>
+              n'a pas de numéro enregistré.
+            </p>
+            <div class="d-flex flex-column gap-2">
+              <button class="btn btn-outline-danger fw-semibold py-2"
+                      t-on-click="() => svc.skipNoPhone(true)">
+                <i class="fa fa-trash me-2"/>Supprimer ce lead et passer au suivant
+              </button>
+              <button class="btn btn-primary fw-semibold py-2"
+                      t-on-click="() => svc.skipNoPhone(false)">
+                <i class="fa fa-forward me-2"/>Classer "Pas de numéro" et passer au suivant
+              </button>
+            </div>
+          </div>
+
+          <!-- APPEL EN COURS -->
+          <div t-elif="s.phase==='calling'">
+            <div class="o_cc_popup_lead_header">
+              <div class="o_cc_popup_avatar"><i class="fa fa-building"/></div>
+              <div class="flex-grow-1">
+                <div class="o_cc_popup_lead_name"
+                     t-esc="s.currentLead?.partner_name or s.currentLead?.name"/>
+                <div class="o_cc_popup_lead_contact"
+                     t-esc="s.currentLead?.contact_name or ''"/>
+              </div>
+              <div class="text-end">
+                <div class="o_cc_micro_label">TENTATIVE</div>
+                <div class="o_cc_attempt_val">
+                  <t t-esc="(s.currentLead?.nb_tentatives or 0)+1"/>/6
+                </div>
+              </div>
+            </div>
+
+            <div class="o_cc_popup_phone_row">
+              <div class="o_cc_popup_phone_num">
+                <i class="fa fa-phone me-2"/>
+                <t t-esc="s.currentLead?.phone or 'Aucun numéro'"/>
+              </div>
+              <div class="o_cc_start_time">
+                <i class="fa fa-clock-o me-1"/>
+                <t t-esc="s.callStartTime"/>
+              </div>
+            </div>
+
+            <div class="o_cc_timer_section">
+              <div class="o_cc_micro_label mb-1">SONNERIE</div>
+              <div class="o_cc_timer_row">
+                <span class="o_cc_timer_call" t-esc="fmt(s.callTimer)"/>
+                <span class="o_cc_timer_max">/ 0:30</span>
+              </div>
+              <div class="progress o_cc_tbar">
+                <div class="progress-bar o_cc_tbar_call"
+                     t-attf-style="width:{{ Math.min((s.callTimer/30)*100,100) }}%"/>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <div class="o_cc_micro_label mb-1">
+                <i class="fa fa-pencil me-1"/>NOTE RAPIDE
+              </div>
+              <textarea t-model="s.notes" class="form-control"
+                        rows="2" placeholder="Note pendant la sonnerie..."/>
+            </div>
+
+            <div class="d-flex gap-2">
+              <button class="btn o_cc_btn_answered flex-fill fw-bold py-3"
+                      t-on-click="() => svc.onAnswered()">
+                <i class="fa fa-check me-2"/>Répond
+              </button>
+              <button class="btn o_cc_btn_noanswer flex-fill fw-bold py-3"
+                      t-on-click="() => svc.onNoAnswer()">
+                <i class="fa fa-times me-2"/>Pas de réponse
+              </button>
+            </div>
+          </div>
+
+          <!-- QUALIFICATION -->
+          <div t-elif="s.phase==='qualify'">
+            <div class="o_cc_qualify_header">
+              <div class="d-flex align-items-center gap-2 flex-wrap">
+                <i class="fa fa-commenting text-success" style="font-size:1rem"/>
+                <span class="o_cc_qualify_status">EN CONVERSATION</span>
+                <span class="o_cc_qualify_name"
+                      t-esc="s.currentLead?.partner_name or s.currentLead?.name"/>
+              </div>
+              <div class="o_cc_conv_timer_box" t-if="!s.hangup">
+                <i class="fa fa-circle text-success o_cc_blink me-1" style="font-size:.5rem"/>
+                <span class="o_cc_conv_timer" t-esc="fmt(s.convTimer)"/>
+                <span class="o_cc_conv_label">en ligne</span>
+              </div>
+              <div class="o_cc_hung_box" t-else="">
+                <i class="fa fa-phone me-1"/>
+                <span>Durée : <t t-esc="fmt(s.convTimer)"/></span>
+              </div>
+            </div>
+
+            <div class="o_cc_qualify_subheader">
+              <div class="o_cc_popup_phone_num small">
+                <i class="fa fa-phone me-1 text-primary"/>
+                <t t-esc="s.currentLead?.phone or 'N/A'"/>
+              </div>
+              <div class="o_cc_start_time">
+                <i class="fa fa-clock-o me-1"/>
+                <t t-esc="s.callStartTime"/>
+              </div>
+              <button t-if="!s.hangup" class="btn btn-sm o_cc_btn_hangup ms-auto"
+                      t-on-click="() => svc.hangUp()">
+                <i class="fa fa-phone me-1"/>Raccrocher
+              </button>
+            </div>
+
+            <div class="o_cc_micro_label mb-2 mt-3">Résultat de l'appel</div>
+            <div class="row g-2 mb-2">
+              <t t-foreach="s.qualifStages" t-as="stage" t-key="stage.id">
+                <div class="col-6">
+                  <button class="btn w-100 py-2 fw-semibold o_cc_qbtn"
+                          t-att-class="svc.isSelected(stage)?'btn-primary':'btn-outline-primary'"
+                          t-on-click="() => svc.setQualif(stage)">
+                    <t t-esc="stage.name"/>
+                  </button>
+                </div>
+              </t>
+            </div>
+
+            <div t-if="svc.isRappelProgramme"
+                 class="d-flex align-items-center flex-wrap gap-2 p-2 rounded mb-2 o_cc_datetime_box">
+              <label class="o_cc_micro_label mb-0">Date</label>
+              <input type="date" t-model="s.rappelDate"
+                     class="form-control form-control-sm" style="width:auto"/>
+              <label class="o_cc_micro_label mb-0">Heure</label>
+              <input type="time" t-model="s.rappelHeure"
+                     class="form-control form-control-sm" style="width:auto"/>
+            </div>
+
+            <div class="o_cc_micro_label mb-2 mt-3">Clôture du lead</div>
+            <div class="row g-2 mb-3">
+              <t t-foreach="s.lostReasons" t-as="reason" t-key="reason.id">
+                <div class="col-6">
+                  <button class="btn w-100 py-2 fw-semibold o_cc_qbtn"
+                          t-att-class="svc.isSelected(reason)?'btn-secondary':'btn-outline-secondary'"
+                          t-on-click="() => svc.setQualif(reason)">
+                    <t t-esc="reason.name"/>
+                  </button>
+                </div>
+              </t>
+            </div>
+
+            <div class="mb-3">
+              <div class="o_cc_micro_label mb-1">
+                <i class="fa fa-pencil me-1"/>NOTES
+              </div>
+              <textarea t-model="s.notes" class="form-control"
+                        rows="3" placeholder="Résumé de la conversation..."/>
+            </div>
+
+            <button class="btn btn-primary w-100 fw-bold py-3"
+                    t-att-disabled="!s.qualification?true:undefined"
+                    t-on-click="() => svc.saveAndNext()">
+              <i class="fa fa-save me-2"/>Enregistrer et appel suivant
+            </button>
+          </div>
+
+          <!-- PAUSE -->
+          <div t-elif="s.phase==='pause'">
+            <div class="o_cc_pause_label mb-3">
+              <i class="fa fa-pause me-1"/>Pause avant prochain appel
+            </div>
+            <div class="o_cc_timer_row justify-content-center mb-1">
+              <span class="o_cc_timer_pause" t-esc="fmt(s.pauseTimer)"/>
+              <span class="o_cc_timer_max">/ 0:40</span>
+            </div>
+            <div class="progress o_cc_tbar mb-4">
+              <div class="o_cc_tbar_pause progress-bar"
+                   t-attf-style="width:{{ Math.min((s.pauseTimer/40)*100,100) }}%"/>
+            </div>
+            <div t-if="s.lastResult"
+                 class="o_cc_pause_summary d-flex align-items-center gap-2 rounded px-3 py-2 mb-3">
+              <i class="fa fa-check-circle text-success"/>
+              <span class="fw-semibold" t-esc="s.lastLeadName"/>
+              <span class="text-muted">→</span>
+              <strong t-esc="s.lastResult"/>
+            </div>
+            <div t-if="s.nextLead" class="o_cc_next_box rounded p-3 mb-4">
+              <div class="o_cc_micro_label mb-2">PROCHAIN APPEL</div>
+              <div class="o_cc_lead_name mb-1"
+                   t-esc="s.nextLead.partner_name or s.nextLead.name"/>
+              <div class="o_cc_lead_phone">
+                <i class="fa fa-phone me-1 text-primary"/>
+                <t t-esc="s.nextLead.phone or 'Aucun numéro'"/>
+              </div>
+            </div>
+            <div class="d-flex gap-2 justify-content-center">
+              <button class="btn fw-semibold px-4"
+                      t-att-class="s.paused?'btn-success':'btn-outline-secondary'"
+                      t-on-click="() => svc.togglePause()">
+                <i t-att-class="s.paused?'fa fa-play me-1':'fa fa-pause me-1'"/>
+                <t t-esc="s.paused?'Reprendre':'Pause'"/>
+              </button>
+              <button class="btn btn-primary fw-semibold px-4"
+                      t-on-click="() => svc.skipPause()">
+                <i class="fa fa-forward me-1"/>Appeler maintenant
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </t>
+
+  <!-- MINI-PLAYER -->
+  <t t-name="crm_call_center.MiniPlayer">
+    <div t-att-data-tick="tick.v" style="display:none"/>
+    <div t-if="s.active" class="o_cc_miniplayer">
+      <div class="o_cc_mp_indicator"/>
+      <div class="flex-grow-1 d-flex align-items-center gap-2 min-width-0">
+        <span class="fw-semibold text-white text-truncate"
+              t-esc="s.currentLead?.partner_name or s.currentLead?.name or ''"/>
+        <span class="o_cc_mp_timer"
+              t-esc="fmt(s.phase==='calling'?s.callTimer:s.phase==='qualify'?s.convTimer:s.pauseTimer)"/>
+        <span class="badge"
+              t-att-class="s.phase==='calling'?'bg-danger':s.phase==='pause'?'bg-warning text-dark':s.phase==='nophone'?'bg-secondary':'bg-success'">
+          <t t-esc="s.phase==='calling'?'Appel':s.phase==='pause'?'Pause':s.phase==='nophone'?'Sans numéro':'Qualification'"/>
+        </span>
+      </div>
+      <div class="d-flex gap-2 flex-shrink-0">
+        <button t-if="s.phase==='pause'" class="btn btn-sm btn-outline-light"
+                t-on-click="() => svc.togglePause()">
+          <i t-att-class="s.paused?'fa fa-play':'fa fa-pause'"/>
+        </button>
+        <button class="btn btn-sm btn-outline-light" t-on-click="goToSession">
+          <i class="fa fa-expand me-1"/>Ouvrir
+        </button>
+        <button class="btn btn-sm btn-outline-danger"
+                t-on-click="() => svc.stopSession()">
+          <i class="fa fa-stop"/>
+        </button>
+      </div>
+    </div>
+  </t>
+
+</templates>

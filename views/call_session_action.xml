@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+  <record id="action_call_session" model="ir.actions.client">
+    <field name="name">Session d'appel</field>
+    <field name="tag">crm_call_center.call_session</field>
+  </record>
+
+  <!-- Sous-menu dans CRM natif -->
+  <menuitem id="menu_crm_call_session"
+            name="Session d'appel"
+            parent="crm.crm_menu_root"
+            action="action_call_session"
+            sequence="10"/>
+
+  <menuitem id="menu_crm_file_appel"
+            name="File d'appel"
+            parent="crm.crm_menu_root"
+            action="action_crm_lead_file_appel"
+            sequence="11"/>
+
+</odoo>
