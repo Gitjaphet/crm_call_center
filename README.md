@@ -1,4 +1,11 @@
-![CRM Call Center banner](./banner-crm-call-center.svg)
+<p align="center">
+  <img src="https://capsule-render.vercel.app/api?type=waving&color=0:F5A65B,100:E85D8A&height=160&section=header&text=Budgy&fontSize=40&fontColor=fff&animation=twinkling&fontAlignY=35&desc=SaaS%20multi-tenant%20de%20gestion%20des%20dépenses&descAlignY=58&descSize=16" width="100%"/>
+</p>
+<p align="center">
+  <img src="https://img.shields.io/badge/Status-Production-success?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/Multi--tenant-django--tenants-blue?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/Madagascar-🇲🇬-red?style=for-the-badge" />
+</p>
 
 ![Odoo](https://img.shields.io/badge/Odoo_19-714B67?style=flat-square&logo=odoo&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white)
